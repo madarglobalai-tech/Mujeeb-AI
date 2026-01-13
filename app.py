@@ -4,7 +4,7 @@ from firebase_admin import credentials, firestore
 import json
 
 # إعدادات الصفحة
-st.set_page_config(page_title="Mujeeb AI - Madar", page_icon="✨")
+st.set_page_config(page_title="Mujeeb AI", page_icon="https://i.ibb.co/s9LHHQs1/Mujeeb-AI-logo-0000-4.png")
 
 # الربط الآمن مع Firebase باستخدام Secrets
 if not firebase_admin._apps:
