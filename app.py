@@ -2,44 +2,43 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# إعدادات الصفحة
+# إعدادات الصفحة بشعار مدار
 st.set_page_config(page_title="Mujeeb AI", page_icon="https://i.ibb.co/s9LHHQs1/Mujeeb-AI-logo-0000-4.png")
 
-# دالة ذكية للاتصال بـ Firebase لمنع الانهيار عند السطر 22
-def init_connection():
-    if not firebase_admin._apps:
-        try:
-            # هنا التغيير الجذري: نستخدم القاموس مباشرة دون json.loads
-            if "firebase_key" in st.secrets:
-                creds_dict = dict(st.secrets.firebase_key)
-                creds = credentials.Certificate(creds_dict)
-                firebase_admin.initialize_app(creds)
-                return firestore.client()
-            else:
-                st.error("الرجاء إعداد مفاتيح Firebase في Secrets.")
-                return None
-        except Exception as e:
-            st.error(f"خطأ في الاتصال: {e}")
-            return None
-    return firestore.client()
+# وظيفة الاتصال بـ Firebase - النسخة المتوافقة مع AttrDict
+if not firebase_admin._apps:
+    try:
+        # هنا السر: st.secrets["firebase_key"] تعيد AttrDict تلقائياً
+        # ونحن نحولها لقاموس عادي ليقبلها Firebase
+        secret_info = dict(st.secrets["firebase_key"])
+        creds = credentials.Certificate(secret_info)
+        firebase_admin.initialize_app(creds)
+    except Exception as e:
+        st.error(f"خطأ في الاتصال: {e}")
 
-# تشغيل الاتصال
-db = init_connection()
+# التأكد من تشغيل قاعدة البيانات
+try:
+    db = firestore.client()
+except Exception as e:
+    st.error("قاعدة البيانات غير متصلة. تأكد من إعدادات Secrets.")
+    db = None
 
 st.title("✨ عقل مُجيب")
 st.write("محرك الذكاء الاصطناعي لمجموعة مدار")
 
-# التأكد من وجود الاتصال قبل تفعيل الدردشة
+# نظام الدردشة
 if db:
     if prompt := st.chat_input("تحدث مع مُجيب..."):
         st.chat_message("user").write(prompt)
         
-        response = f"أهلاً بك يا مؤسس مدار. أنا عقل مُجيب، استلمت رسالتك: '{prompt}'"
+        # استجابة ذكاء مدار
+        response = f"مرحباً بك في مدار. أنا عقل مُجيب، استقبلت رسالتك: '{prompt}'"
         
         with st.chat_message("assistant"):
             st.write(response)
         
-        # الحفظ في Firebase
-        db.collection("Madar_Chat_Logs").add({"query": prompt, "answer": response})
-else:
-    st.warning("تطبيق مُجيب متوقف مؤقتاً لعدم وجود مفاتيح الاتصال.")
+        # حفظ في Firebase
+        db.collection("Madar_Chat_Logs").add({
+            "query": prompt, 
+            "answer": response
+        })
